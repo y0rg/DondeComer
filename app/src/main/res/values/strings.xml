@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">DondeComer</string>
+    <string name="title_activity_maps">DondeComer</string>
+
+    <string name="title_activity_fullscreen">DondeComer</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="title_activity_main">¿Donde comer?</string>
+    <string name="action_settings">Settings</string>
+</resources>
