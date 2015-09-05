@@ -10,6 +10,8 @@ public class Restaurante {
     private String nombre;
     private int maxPlazas;
 
+    private int plazasReservadas;
+
     //TODO faltan mas atributos??, preguntar??
 
 
@@ -45,5 +47,13 @@ public class Restaurante {
 
     public void setLatitud(double latitud) {
         this.latitud = latitud;
+    }
+
+    public int getPlazasReservadas() {
+        return plazasReservadas;
+    }
+
+    public void setPlazasReservadas(int plazasReservadas) {
+        this.plazasReservadas = plazasReservadas;
     }
 }

@@ -169,15 +169,31 @@ public class MainActivity extends FragmentActivity {
         List<Restaurante> list = cargaEstatica();
         //iterar sobre la lista y poner los markers
         for(Restaurante rest : list) {
-            mMap.addMarker(new MarkerOptions()
-                    .position(new LatLng(rest.getLatitud(), rest.getLongitud()))
-                    .title(rest.getNombre())
-                    .snippet("Plazas: " + rest.getMaxPlazas())
-                    .icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_launcher)));//
+            float porcentajeOcupacion = (float)rest.getPlazasReservadas()/rest.getMaxPlazas();
+            if(porcentajeOcupacion < 0.33) {
+                mMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(rest.getLatitud(), rest.getLongitud()))
+                        .title(rest.getNombre())
+                        .snippet("Plazas: " +rest.getPlazasReservadas()+"/" +rest.getMaxPlazas())
+                        .icon(BitmapDescriptorFactory.fromResource(R.mipmap.icon_green)));
+            } else {
+                if(porcentajeOcupacion >0.66){
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(rest.getLatitud(), rest.getLongitud()))
+                            .title(rest.getNombre())
+                            .snippet("Plazas: " +rest.getPlazasReservadas()+"/" +rest.getMaxPlazas())
+                            .icon(BitmapDescriptorFactory.fromResource(R.mipmap.icon_red)));
+                } else {
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(rest.getLatitud(), rest.getLongitud()))
+                            .title(rest.getNombre())
+                            .snippet("Plazas: " +rest.getPlazasReservadas()+"/" +rest.getMaxPlazas())
+                            .icon(BitmapDescriptorFactory.fromResource(R.mipmap.icon_yellow)));
+                }
+            }
         }
 
         //TODO El centro del mapa debe ser la posicion recuperada del dispositivo o la dada por el usuario
-        //TODO calcular el zoom para qe se muestren todos los resultados a la vez??
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLong, 13));
 
         //Volvemos a añadir el estasAqui
@@ -195,6 +211,7 @@ public class MainActivity extends FragmentActivity {
 
         Restaurante rest = new Restaurante();
         rest.setMaxPlazas(20);
+        rest.setPlazasReservadas(18);//0.9 rojo
         rest.setNombre("Burri Kin");
         rest.setLatitud(37.2843647);
         rest.setLongitud(-5.9327765);
@@ -202,9 +219,18 @@ public class MainActivity extends FragmentActivity {
 
         rest = new Restaurante();
         rest.setMaxPlazas(200);
+        rest.setPlazasReservadas(80); //0.04 amarillo
         rest.setNombre("McPollas");
         rest.setLatitud(37.287154);
         rest.setLongitud(-5.920713);
+        list.add(rest);
+
+        rest = new Restaurante();
+        rest.setMaxPlazas(120);
+        rest.setPlazasReservadas(12); //0.01 verde
+        rest.setNombre("Casa Manolo");
+        rest.setLatitud(37.288227);
+        rest.setLongitud(-5.924299);
         list.add(rest);
 
         return list;
