@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.WindowManager;
 
 /**
+ * Clase autogenerada para el manejo de la acitvidad FullScreen
+ *
  * An API 11+ implementation of {@link SystemUiHider}. Uses APIs available in
  * Honeycomb and later (specifically {@link View#setSystemUiVisibility(int)}) to
  * show and hide the system UI.

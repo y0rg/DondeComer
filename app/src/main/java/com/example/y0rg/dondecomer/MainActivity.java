@@ -41,7 +41,7 @@ import java.util.List;
 
 public class MainActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener{
 
-    private GoogleMap mMap; // Might be null if Google Play services APK is not available.
+    private GoogleMap mMap; // Ojo que este activa la api de Google PLay
 
     protected GoogleApiClient mGoogleApiClient;
     private PlaceAutocompleteAdapter mAdapter;
@@ -50,7 +50,7 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
     private TextView mPlaceDetailsAttribution;
 
     private static LatLng latLong;
-    private Marker estasAqui;
+    private Marker estasAqui; //Por si hay que recuperar o mover el marker de "Estas aqui". posible mejora para actualizar en tiempo real
 
     private LocationManager locationManager;
     private final LocationListener locationListener = new LocationListener() {
@@ -62,13 +62,11 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
             // Ponemos la camara en la posicion recuperada
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLong, 10));
 
-            //Ponemos un "usted esta aqui"
+            //Ponemos un "Estas aqui"
             estasAqui = mMap.addMarker(new MarkerOptions()
                     .position(latLong)
                     .title("Estás aqui"));
 
-            //Una vez recuperada la posicion, ya no hace falta actualizar mas hasta nueva orden
-            //locationManager.removeUpdates(this);
         }
 
         @Override
@@ -90,29 +88,31 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        //Al crear la actividad, inicializamos la api de Google Places.GEO_DATA_API
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, 0 /* clientId */, this)
                 .addApi(Places.GEO_DATA_API)
                 .build();
 
+        //Asignamos el layout a la actividad
         setContentView(R.layout.activity_main);
 
+        //Si aun no esta inicalizado, inicializamos el mapa
         setUpMapIfNeeded();
 
         //Inicio atuocomplete
-        // Retrieve the AutoCompleteTextView that will display Place suggestions.
-        mAutocompleteView = (AutoCompleteTextView)
-                findViewById(R.id.inputBuscar);
-        // Register a listener that receives callbacks when a suggestion has been selected
+        // Recuperamos el input que mostrara las sugerencias de busqueda
+        mAutocompleteView = (AutoCompleteTextView) findViewById(R.id.inputBuscar);
+
+        // Registramos un listener en el input para cuando se seleccione un elemento de la lista ejecutar una accion
         mAutocompleteView.setOnItemClickListener(mAutocompleteClickListener);
 
-        // Retrieve the TextViews that will display details and attributions of the selected place.
+        // Recuperamos un textview donde mostrar informacion detallada de la busqueda
         mPlaceDetailsText = (TextView) findViewById(R.id.place_details);
         mPlaceDetailsAttribution = (TextView) findViewById(R.id.place_attribution);
 
-        // Set up the adapter that will retrieve suggestions from the Places Geo Data API that cover the entire world.
-        LatLngBounds zonaBusqueda = Utils.convertCenterAndRadiusToBounds(latLong, 100);//TODO comprobar las unidades del radio
+        // Limitamos las sugerencias a un radio de accion, para que no muestre sugerencias de todo el mundo
+        LatLngBounds zonaBusqueda = Utils.convertCenterAndRadiusToBounds(latLong, 100);
         mAdapter = new PlaceAutocompleteAdapter(this, android.R.layout.simple_list_item_1, mGoogleApiClient, zonaBusqueda, null);
         mAutocompleteView.setAdapter(mAdapter);
         //FIN autocomplete
@@ -120,40 +120,25 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
 
         locationManager= (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         //TODO se puede cambiar para que elija recuperar la posicion de otros dispositivos
+        // Comprobamos que la aplicacion tiene los permisos de acceso a la localizacion del dispositivo
         if(PackageManager.PERMISSION_GRANTED == checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1, 1, locationListener);
         } else {
-            //TODO que coño pasa si no tiene permisos, XQ NO LOS COGE (se los he dado a manubrio Settings->Apps->DondeComer->Permission)
-            //requestPermissions(); ??
             Toast.makeText(getApplicationContext(), "Sin permiso", Toast.LENGTH_LONG).show();
         }
     }
 
     /**
-     * Listener that handles selections from suggestions from the AutoCompleteTextView that
-     * displays Place suggestions.
-     * Gets the place id of the selected item and issues a request to the Places Geo Data API
-     * to retrieve more details about the place.
-     *
-     * @see com.google.android.gms.location.places.GeoDataApi#getPlaceById(com.google.android.gms.common.api.GoogleApiClient,
-     * String...)
+        Este metodo se ejecuta cuando pulsamos un item de la lista de sugerencias de busqueda
      */
-    private AdapterView.OnItemClickListener mAutocompleteClickListener
-            = new AdapterView.OnItemClickListener() {
+    private AdapterView.OnItemClickListener mAutocompleteClickListener = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            /*
-             Retrieve the place ID of the selected item from the Adapter.
-             The adapter stores each Place suggestion in a PlaceAutocomplete object from which we
-             read the place ID.
-              */
+
+            //Recuperamos el id del la sugerencia de localizacion seleccioanda
             final PlaceAutocompleteAdapter.PlaceAutocomplete item = mAdapter.getItem(position);
             final String placeId = String.valueOf(item.placeId);
 
-            /*
-             Issue a request to the Places Geo Data API to retrieve a Place object with additional
-              details about the place.
-              */
             PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId);
             placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
 
@@ -163,40 +148,38 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
                         public void onResult(PlaceBuffer places) {
                             if (places.getStatus().isSuccess()) {
                                 final Place myPlace = places.get(0);
-                                //Actualizamos la LatLong del centro del mapa
+                                //Actualizamos la LatLong del centro del mapa con la de la sugerencia seleccionada
                                 latLong = myPlace.getLatLng();
                             }
                             places.release();
                         }
                     });
-
+            //Mostramos un pequeño mensaje de comprobacion con las nuevas coordenadas
             Toast.makeText(getApplicationContext(), "Clicked: " + latLong, Toast.LENGTH_SHORT).show();
 
         }
     };
 
     /**
-     * Callback for results from a Places Geo Data API query that shows the first place result in
-     * the details view on screen.
+     * Metodo que recupera la lista de sugerencias al ir escrbiendo en el inputtext de busqueda
      */
     private ResultCallback<PlaceBuffer> mUpdatePlaceDetailsCallback
             = new ResultCallback<PlaceBuffer>() {
         @Override
         public void onResult(PlaceBuffer places) {
             if (!places.getStatus().isSuccess()) {
-                // Request did not complete successfully
                 places.release();
                 return;
             }
-            // Get the Place object from the buffer.
+            // Se recupera la "Place" localizacion
             final Place place = places.get(0);
 
-            // Format details of the place for display and show it in a TextView.
+            // Recuperamos una serie de datos de la localizacion por si son de interes
             mPlaceDetailsText.setText(formatPlaceDetails(getResources(), place.getName(),
                     place.getId(), place.getAddress(), place.getPhoneNumber(),
                     place.getWebsiteUri()));
 
-            // Display the third party attributions if set.
+            // Si hay informacion de "terceros" tambien se puede mostrar
             final CharSequence thirdPartyAttribution = places.getAttributions();
             if (thirdPartyAttribution == null) {
                 mPlaceDetailsAttribution.setVisibility(View.GONE);
@@ -216,51 +199,34 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
     }
 
     /**
-     * Called when the Activity could not connect to Google Play services and the auto manager
-     * could resolve the error automatically.
-     * In this case the API is not available and notify the user.
+     * Metodo que se llama cuando no se puede conectar con el servicio de GooglePlay
      *
-     * @param connectionResult can be inspected to determine the cause of the failure
+     * @param connectionResult  devolve el motivo del fallo de la conexion
      */
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 
-        //Log.e(TAG, "onConnectionFailed: ConnectionResult.getErrorCode() = "+ connectionResult.getErrorCode());
-
-        // TODO(Developer): Check error code and notify the user of error state and resolution.
-        Toast.makeText(this, "Could not connect to Google API Client: Error " + connectionResult.getErrorCode(),
-                Toast.LENGTH_SHORT).show();
+        // TODO tratamiento del error y acciones en consecuencia, solo se esta mostrando el error en pantalla
+        Toast.makeText(this, "Could not connect to Google API Client: Error "
+                        + connectionResult.getErrorCode(), Toast.LENGTH_SHORT).show();
     }
 
-
+    /**
+     * Metodo al que se llama en caso de volver de estar en segundo plano la app
+     */
     @Override
     protected void onResume() {
         super.onResume();
         setUpMapIfNeeded();
     }
 
-    /**
-     * Sets up the map if it is possible to do so (i.e., the Google Play services APK is correctly
-     * installed) and the map has not already been instantiated.. This will ensure that we only ever
-     * call {@link #setUpMap()} once when {@link #mMap} is not null.
-     * <p/>
-     * If it isn't installed {@link SupportMapFragment} (and
-     * {@link com.google.android.gms.maps.MapView MapView}) will show a prompt for the user to
-     * install/update the Google Play services APK on their device.
-     * <p/>
-     * A user can return to this FragmentActivity after following the prompt and correctly
-     * installing/updating/enabling the Google Play services. Since the FragmentActivity may not
-     * have been completely destroyed during this process (it is likely that it would only be
-     * stopped or paused), {@link #onCreate(Bundle)} may not be called again so we should call this
-     * method in {@link #onResume()} to guarantee that it will be called.
-     */
+
     private void setUpMapIfNeeded() {
-        // Do a null check to confirm that we have not already instantiated the map.
+        // Comprobamos si no esta instanciado el mapa
         if (mMap == null) {
-            // Try to obtain the map from the SupportMapFragment.
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
-                    .getMap();
-            // Check if we were successful in obtaining the map.
+            // Si no lo esta, intentamos recuperar del fragment de la actividad
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+            // Comprobamos si lo hemos podido recuperar y los "levantamos"
             if (mMap != null) {
                 setUpMap();
             }
@@ -268,13 +234,12 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
     }
 
     /**
-     * This is where we can add markers or lines, add listeners or move the camera. In this case, we
-     * just add a marker near Africa.
-     * <p/>
-     * This should only be called once and when we are sure that {@link #mMap} is not null.
+     * Metodo que se llama una vez tenemos la instancia de Google Maps
+     * Es la primera carga que se hace, por lo que recogemos la posicion actual del dispositivo,
+     * centramos el mapa y añadimos la marca "Estas aqui"
      */
     private void setUpMap() {
-        //TODO eliminar, en el emulador no se guarda lastKnowLocation, la pongo a pelo, elimarlo
+        //TODO eliminar, en el emulador no se guarda lastKnowLocation, la pongo a hardcode, elimarlo
         latLong = new LatLng(37.2772453,-5.9206954);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLong, 15));
         estasAqui = mMap.addMarker(new MarkerOptions()
@@ -294,6 +259,8 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
         }
     }
 
+    //Metodo para recuperar la ulitma localizacion guardada por el dispositivo.
+    //Se ejecuta en caso de no poder recuperar la posicion actual
     private Location getLastKnownLocation() {
         locationManager = (LocationManager)getApplicationContext().getSystemService(LOCATION_SERVICE);
         List<String> providers = locationManager.getProviders(true);
@@ -305,7 +272,6 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
                     continue;
                 }
                 if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
-                    // Found best last known location: %s", l);
                     bestLocation = l;
                 }
             }
@@ -313,15 +279,14 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
         return bestLocation;
     }
 
-    public void buscar(View v){ //TODO pasar una posicion objeto tipo LatLng
+    public void buscar(View v){
         //Limpiamos el mapa de posibles busquedas anteriores
         mMap.clear();
 
         //TODO llamada al webservice, que recibe una lista de restaurantes con todos sus valores
         List<Restaurante> list = cargaEstatica();
-        //Variable para guardar el numero de restaurantes encontrados que no estan llenos
-        int libres =0;
-        //iterar sobre la lista y poner los markers
+
+        //iterar sobre la lista y poner los markers de los restaurantes
         for(Restaurante rest : list) {
             float porcentajeOcupacion = (float)rest.getPlazasReservadas()/rest.getMaxPlazas();
             if(porcentajeOcupacion < 0.33) {
@@ -345,9 +310,6 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
                             .icon(BitmapDescriptorFactory.fromResource(R.mipmap.icon_yellow)));
                 }
             }
-            if(rest.getPlazasReservadas()!=rest.getMaxPlazas()){
-                libres++;
-            }
         }
 
         //El centro del mapa debe ser la posicion recuperada del dispositivo o la dada por el usuario
@@ -361,7 +323,7 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
 
 
 
-    //TODO ELIMINAR
+    //TODO ELIMINAR CUANDO SE RECUPEREN LOS DATOS DEL WEBSERVICE
     @Deprecated
     public List<Restaurante> cargaEstatica(){
         List<Restaurante> list = new ArrayList<Restaurante>();
@@ -369,25 +331,25 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
         Restaurante rest = new Restaurante();
         rest.setMaxPlazas(20);
         rest.setPlazasReservadas(20);//0.9 rojo
-        rest.setNombre("Burri Kin");
-        rest.setLatitud(37.2843647);
-        rest.setLongitud(-5.9327765);
+        rest.setNombre("Burguer King");
+        rest.setLatitud(37.3908891);
+        rest.setLongitud(-5.9748133);
         list.add(rest);
 
         rest = new Restaurante();
         rest.setMaxPlazas(200);
         rest.setPlazasReservadas(80); //0.04 amarillo
-        rest.setNombre("McPollas");
-        rest.setLatitud(37.287154);
-        rest.setLongitud(-5.920713);
+        rest.setNombre("McDonalds");
+        rest.setLatitud(37.3912703);
+        rest.setLongitud(-5.9752772);
         list.add(rest);
 
         rest = new Restaurante();
         rest.setMaxPlazas(120);
         rest.setPlazasReservadas(12); //0.01 verde
         rest.setNombre("Casa Manolo");
-        rest.setLatitud(37.288227);
-        rest.setLongitud(-5.924299);
+        rest.setLatitud(37.3896175);
+        rest.setLongitud(-5.9804919);
         list.add(rest);
 
         return list;

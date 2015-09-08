@@ -5,6 +5,8 @@ import android.view.View;
 import android.view.WindowManager;
 
 /**
+ * Clase autogerenada para el manejo de la actividad FullScreen
+ *
  * A base implementation of {@link SystemUiHider}. Uses APIs available in all
  * API levels to show and hide the status bar.
  */

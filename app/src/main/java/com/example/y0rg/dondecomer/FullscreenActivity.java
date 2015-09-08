@@ -12,37 +12,31 @@ import android.view.MotionEvent;
 import android.view.View;
 
 /**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
- *
- * @see SystemUiHider
+ * Activididad para mostrar el logo de la app a modo de carga
  */
 public class FullscreenActivity extends Activity {
     /**
-     * Whether or not the system UI should be auto-hidden after
-     * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
+     * Indica si se muestra la interfaz de botones
      */
     private static final boolean AUTO_HIDE = true;
 
     /**
-     * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
-     * user interaction before hiding the system UI.
+     * Indica durante cuanto tiempo se oculta la interfaz
      */
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
 
     /**
-     * If set, will toggle the system UI visibility upon interaction. Otherwise,
-     * will show the system UI visibility upon interaction.
+     * Si se muestra la interfaz al tocar la pantalla
      */
     private static final boolean TOGGLE_ON_CLICK = true;
 
     /**
-     * The flags to pass to {@link SystemUiHider#getInstance}.
+     * El flag que se le pasa al sistema para que muestre o no la interfaz de navegacion
      */
     private static final int HIDER_FLAGS = SystemUiHider.FLAG_HIDE_NAVIGATION;
 
     /**
-     * The instance of the {@link SystemUiHider} for this activity.
+     * TInstancia del UI del sistema en la actividad
      */
     private SystemUiHider mSystemUiHider;
 
@@ -57,10 +51,7 @@ public class FullscreenActivity extends Activity {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
 
-        // Trigger the initial hide() shortly after the activity has been
-        // created, to briefly hint to the user that UI controls
-        // are available.
-        //Cambiamos de actividad con un retraso de 2 segundos, para que se veo la imagen como de carga
+        //Cambiamos de actividad con un retraso de 2 segundos, para que se vao la imagen como de carga
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -71,9 +62,7 @@ public class FullscreenActivity extends Activity {
 
 
     /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
+     * Listener para ocultar/mostrar interfaz al tocar la pantalla
      */
     View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
         @Override
@@ -94,8 +83,7 @@ public class FullscreenActivity extends Activity {
     };
 
     /**
-     * Schedules a call to hide() in [delay] milliseconds, canceling any
-     * previously scheduled calls.
+     * Programacion de ocultar en caso de que se llamara previamente, se cancela la accion
      */
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);

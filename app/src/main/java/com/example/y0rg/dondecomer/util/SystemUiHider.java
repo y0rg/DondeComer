@@ -5,6 +5,8 @@ import android.os.Build;
 import android.view.View;
 
 /**
+ * Clase autogerenada para el manejo de las actividades
+ *
  * A utility class that helps with showing and hiding system UI such as the
  * status bar and navigation/system bar. This class uses backward-compatibility
  * techniques described in <a href=

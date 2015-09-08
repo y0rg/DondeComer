@@ -1,7 +1,8 @@
 package com.example.y0rg.dondecomer;
 
 /**
- * Created by y0rg on 29/08/2015.
+ * Clase de objetos restaurantes que se recuperaran tras una llamada al webservice
+ * Una vez tengamos la lista de restaurantes, se mostraran en markers sobre el mapa
  */
 public class Restaurante {
     private double latitud;
@@ -11,8 +12,6 @@ public class Restaurante {
     private int maxPlazas;
 
     private int plazasReservadas;
-
-    //TODO faltan mas atributos??, preguntar??
 
 
     public int getMaxPlazas() {

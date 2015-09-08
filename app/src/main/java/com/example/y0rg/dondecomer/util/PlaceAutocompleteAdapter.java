@@ -36,43 +36,34 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Adapter that handles Autocomplete requests from the Places Geo Data API.
- * Results are encoded as {@link com.example.y0rg.dondecomer.util.PlaceAutocompleteAdapter.PlaceAutocomplete}
- * objects
- * that contain both the Place ID and the text description from the autocomplete query.
- * <p>
- * Note that this adapter requires a valid {@link com.google.android.gms.common.api.GoogleApiClient}.
- * The API client must be maintained in the encapsulating Activity, including all lifecycle and
- * connection states. The API client must be connected with the {@link Places#GEO_DATA_API} API.
+ * Clase para el manejo del input  que se rellena con las localizaciones "Places" sugeridas por la api de Google
+ *
  */
 public class PlaceAutocompleteAdapter
         extends ArrayAdapter<PlaceAutocompleteAdapter.PlaceAutocomplete> implements Filterable {
 
-    private static final String TAG = "PlaceAutocompleteAdapter";
     /**
-     * Current results returned by this adapter.
+     * Resultados devueltos por el adaptador
      */
     private ArrayList<PlaceAutocomplete> mResultList;
 
     /**
-     * Handles autocomplete requests.
+     * Instancia de la api de Google que devuelve los resultados
      */
     private GoogleApiClient mGoogleApiClient;
 
     /**
-     * The bounds used for Places Geo Data autocomplete API requests.
+     * Los limites de zona en los que se buscan los resultados sugeridos
      */
     private LatLngBounds mBounds;
 
     /**
-     * The autocomplete filter used to restrict queries to a specific set of place types.
+     * Un filtro por si se quiere indicar que solo muestre un tipo concreto de localizacion (Plazas por ejemplo)
      */
     private AutocompleteFilter mPlaceFilter;
 
     /**
-     * Initializes with a resource for text rows and autocomplete query bounds.
-     *
-     * @see android.widget.ArrayAdapter#ArrayAdapter(android.content.Context, int)
+     * Inicializa el objeto de la clase
      */
     public PlaceAutocompleteAdapter(Context context, int resource, GoogleApiClient googleApiClient,
                                     LatLngBounds bounds, AutocompleteFilter filter) {
@@ -83,14 +74,14 @@ public class PlaceAutocompleteAdapter
     }
 
     /**
-     * Sets the bounds for all subsequent queries.
+     * Establece los "limites" para las consultas
      */
     public void setBounds(LatLngBounds bounds) {
         mBounds = bounds;
     }
 
     /**
-     * Returns the number of results received in the last autocomplete query.
+     * Devuelve el numero de resultados obtenidos
      */
     @Override
     public int getCount() {
@@ -98,7 +89,7 @@ public class PlaceAutocompleteAdapter
     }
 
     /**
-     * Returns an item from the last autocomplete query.
+     * Devuelve uno de los resultados pasando en el parametro su posicion
      */
     @Override
     public PlaceAutocomplete getItem(int position) {
@@ -106,7 +97,7 @@ public class PlaceAutocompleteAdapter
     }
 
     /**
-     * Returns the filter for the current set of autocomplete results.
+     * Devuelve el filtro utilizado para las busqueda en caso de haber establecido uno
      */
     @Override
     public Filter getFilter() {
@@ -114,12 +105,12 @@ public class PlaceAutocompleteAdapter
             @Override
             protected FilterResults performFiltering(CharSequence constraint) {
                 FilterResults results = new FilterResults();
-                // Skip the autocomplete query if no constraints are given.
+                // No busca si no existe restriccion
                 if (constraint != null) {
-                    // Query the autocomplete API for the (constraint) search string.
+                    // Se piden resultados
                     mResultList = getAutocomplete(constraint);
                     if (mResultList != null) {
-                        // The API successfully returned results.
+                        // Si ha habido resultados....
                         results.values = mResultList;
                         results.count = mResultList.size();
                     }
@@ -130,10 +121,10 @@ public class PlaceAutocompleteAdapter
             @Override
             protected void publishResults(CharSequence constraint, FilterResults results) {
                 if (results != null && results.count > 0) {
-                    // The API returned at least one result, update the data.
+                    // Si devuelve al menos un resultado, se actualizan los datos
                     notifyDataSetChanged();
                 } else {
-                    // The API did not return any results, invalidate the data set.
+                    // Si no se han obetnido resultados, se invalidan los datos
                     notifyDataSetInvalidated();
                 }
             }
@@ -142,70 +133,63 @@ public class PlaceAutocompleteAdapter
     }
 
     /**
-     * Submits an autocomplete query to the Places Geo Data Autocomplete API.
-     * Results are returned as {@link com.example.y0rg.dondecomer.util.PlaceAutocompleteAdapter.PlaceAutocomplete}
-     * objects to store the Place ID and description that the API returns.
-     * Returns an empty list if no results were found.
-     * Returns null if the API client is not available or the query did not complete
-     * successfully.
-     * This method MUST be called off the main UI thread, as it will block until data is returned
-     * from the API, which may include a network request.
+     * Recupera las localizacions, "places" de la API Places Geo Data
+     * Los resultados se devuelven como objetos del tipo
+     * {@link com.example.y0rg.dondecomer.util.PlaceAutocompleteAdapter.PlaceAutocomplete}
+     * que almacenan un id, por el cual luego se puede recuperar toda la informacion de la "places"
+     * a traves de la API
      *
-     * @param constraint Autocomplete query string
-     * @return Results from the autocomplete API or null if the query was not successful.
+     * Devuelve una lista vacia si no hay resultados
+     * Devuelve NULL si la API no esta disponible, o la consulta no se recibe correctamente
+     *
+     * Hay que llamar a este metodo en el MainActivity, necesita acceso/permisos a NETWORK para recuperar los datos
+     *
+     * @param constraint Restriccion de busqueda del Autocomplete
+     * @return Resultados de la API para el autocomplete, null si no encuentra
      * @see Places#GEO_DATA_API#getAutocomplete(CharSequence)
      */
     private ArrayList<PlaceAutocomplete> getAutocomplete(CharSequence constraint) {
         if (mGoogleApiClient.isConnected()) {
-            //Log.i(TAG, "Starting autocomplete query for: " + constraint);
-
-            // Submit the query to the autocomplete API and retrieve a PendingResult that will
-            // contain the results when the query completes.
+            // Envia la consulta a la api y se queda "a la espera" de resultados
             PendingResult<AutocompletePredictionBuffer> results =
                     Places.GeoDataApi
                             .getAutocompletePredictions(mGoogleApiClient, constraint.toString(),
                                     mBounds, mPlaceFilter);
 
-            // This method should have been called off the main UI thread. Block and wait for at most 60s
-            // for a result from the API.
+            // LLama al metodo y espera a los resultados hasta 60 segundos
             AutocompletePredictionBuffer autocompletePredictions = results
                     .await(60, TimeUnit.SECONDS);
 
-            // Confirm that the query completed successfully, otherwise return null
+            // Comprueba si la respuesta es correcta, en caso contrario devuelve null
             final Status status = autocompletePredictions.getStatus();
             if (!status.isSuccess()) {
-                Toast.makeText(getContext(), "Error contacting API: " + status.toString(),
+                Toast.makeText(getContext(), "Error conectando con la API: " + status.toString(),
                         Toast.LENGTH_SHORT).show();
-                //Log.e(TAG, "Error getting autocomplete prediction API call: " + status.toString());
                 autocompletePredictions.release();
                 return null;
             }
 
-            //Log.i(TAG, "Query completed. Received " + autocompletePredictions.getCount()+ " predictions.");
-
-            // Copy the results into our own data structure, because we can't hold onto the buffer.
-            // AutocompletePrediction objects encapsulate the API response (place ID and description).
+            //Se encapsulan los resultados recuperados por la API en objetos con la ID y la descripcion
 
             Iterator<AutocompletePrediction> iterator = autocompletePredictions.iterator();
             ArrayList resultList = new ArrayList<>(autocompletePredictions.getCount());
             while (iterator.hasNext()) {
                 AutocompletePrediction prediction = iterator.next();
-                // Get the details of this prediction and copy it into a new PlaceAutocomplete object.
+                //Por cada resultado, cogemos la descripcion y la guardamos en la lista a mostrar
                 resultList.add(new PlaceAutocomplete(prediction.getPlaceId(),
                         prediction.getDescription()));
             }
 
-            // Release the buffer now that all data has been copied.
+            // Limpiamos el buffer de predicciones
             autocompletePredictions.release();
 
             return resultList;
         }
-        //Log.e(TAG, "Google API client is not connected for autocomplete query.");
         return null;
     }
 
     /**
-     * Holder for Places Geo Data Autocomplete API results.
+     * Contenedor para almacenar los resultados obtenidos de la API Place Geo Data Autocomplete
      */
     public class PlaceAutocomplete {
 
